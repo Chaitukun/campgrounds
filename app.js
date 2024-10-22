@@ -19,6 +19,7 @@ const passport = require('passport');
 const LocalStrategy = require('passport-local');
 const userRoutes = require('./routes/user.js');
 const mongoSanitize = require('express-mongo-sanitize');
+const helmet=require('helmet');
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(session({
@@ -26,6 +27,8 @@ app.use(session({
   resave: false,
   saveUninitialized: true,
   cookie: {
+    httpOnly:true,
+    // secure:true,
     expires: Date.now() + 1000 * 60 * 60 * 24 * 7,
     maxAge: 1000 * 60 * 60 * 24 * 7
   }
@@ -61,6 +64,58 @@ app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride("_method"));
 app.use(mongoSanitize());
 app.engine('ejs', ejsMate);
+
+
+const scriptSrcUrls = [
+  "https://stackpath.bootstrapcdn.com/",
+  // "https://api.tiles.mapbox.com/",
+  // "https://api.mapbox.com/",
+  "https://kit.fontawesome.com/",
+  "https://cdnjs.cloudflare.com/",
+  "https://cdn.jsdelivr.net",
+  "https://cdn.maptiler.com/", // add this
+];
+const styleSrcUrls = [
+  "https://kit-free.fontawesome.com/",
+  "https://stackpath.bootstrapcdn.com/",
+  // "https://api.mapbox.com/",
+  // "https://api.tiles.mapbox.com/",
+  "https://fonts.googleapis.com/",
+  "https://use.fontawesome.com/",
+  "https://cdn.jsdelivr.net",
+  "https://cdn.maptiler.com/", // add this
+];
+const connectSrcUrls = [
+  // "https://api.mapbox.com/",
+  // "https://a.tiles.mapbox.com/",
+  // "https://b.tiles.mapbox.com/",
+  // "https://events.mapbox.com/",
+  "https://api.maptiler.com/", // add this
+];
+
+const fontSrcUrls = [];
+app.use(
+    helmet.contentSecurityPolicy({
+        directives: {
+            defaultSrc: [],
+            connectSrc: ["'self'", ...connectSrcUrls],
+            scriptSrc: ["'unsafe-inline'", "'self'", ...scriptSrcUrls],
+            styleSrc: ["'self'", "'unsafe-inline'", ...styleSrcUrls],
+            workerSrc: ["'self'", "blob:"],
+            objectSrc: [],
+            imgSrc: [
+                "'self'",
+                "blob:",
+                "data:",
+                "https://res.cloudinary.com/dyheuc8f9/", //SHOULD MATCH YOUR CLOUDINARY ACCOUNT! 
+                "https://images.unsplash.com/",
+                "https://api.maptiler.com/",
+            ],
+            fontSrc: ["'self'", ...fontSrcUrls],
+        },
+    })
+);
+
 
 // app.get('/test', async (req, res) => {
 //   console.log(req.originalUrl)

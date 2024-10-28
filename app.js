@@ -21,8 +21,38 @@ const userRoutes = require('./routes/user.js');
 const mongoSanitize = require('express-mongo-sanitize');
 const helmet=require('helmet');
 
+const MongoStore = require('connect-mongo');
+
+// const dbUrl=process.env.DB_URL;
 app.use(express.static(path.join(__dirname, 'public')));
+
+const dbUrl = process.env.DB_URL || 'mongodb://localhost:27017/yelp-camp';
+
+
+mongoose.connect(dbUrl)
+  .then(() => {
+    console.log("connected to db")
+  })
+  .catch((e) => {
+    console.log(e)
+  })
+
+  const secret = process.env.SECRET || 'thisshouldbeabettersecret!';
+const store = MongoStore.create({
+  mongoUrl: dbUrl,
+  touchAfter: 24 * 60 * 60,
+  crypto: {
+      secret
+  }
+});
+
+store.on("error",function(e){
+  console.log("SESSION STORE ERROR",e)
+  
+})
+
 app.use(session({
+  store,
   secret: 'thisshouldbeabettersecret',
   resave: false,
   saveUninitialized: true,
@@ -50,13 +80,8 @@ app.use((req, res, next) => {
   next();
 })
 
-mongoose.connect("mongodb://localhost:27017/yelp-camp")
-  .then(() => {
-    console.log("connected to db")
-  })
-  .catch((e) => {
-    console.log(e)
-  })
+// 
+
 
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
@@ -86,10 +111,6 @@ const styleSrcUrls = [
   "https://cdn.maptiler.com/", // add this
 ];
 const connectSrcUrls = [
-  // "https://api.mapbox.com/",
-  // "https://a.tiles.mapbox.com/",
-  // "https://b.tiles.mapbox.com/",
-  // "https://events.mapbox.com/",
   "https://api.maptiler.com/", // add this
 ];
 
@@ -147,4 +168,5 @@ app.use((err, req, res, next) => {
   res.status(statusCode).render("error", { err });
 })
 
-app.listen(3000, console.log("Listening to port 3000"))
+const port=process.env.PORT ||3000;
+app.listen(port, console.log(`Listening to port ${port}`))
